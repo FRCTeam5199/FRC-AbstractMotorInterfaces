@@ -9,6 +9,8 @@ import frc.misc.Chirp;
 import frc.misc.PID;
 import frc.robot.Robot;
 
+import java.util.ArrayList;
+
 import static com.ctre.phoenix.motorcontrol.ControlMode.*;
 import static com.ctre.phoenix.motorcontrol.NeutralMode.Brake;
 import static com.ctre.phoenix.motorcontrol.NeutralMode.Coast;
@@ -17,11 +19,13 @@ import static com.ctre.phoenix.motorcontrol.NeutralMode.Coast;
  * This is the wrapper for falcon 500's and maybe some other stuff
  */
 public class TalonMotorController extends AbstractMotorController {
+    public final ArrayList<AbstractMotorController> motorFollowerList = new ArrayList<>();
     private final WPI_TalonFX motor;
+    public boolean isFollower = false;
 
-    public TalonMotorController(int id) {
+    public TalonMotorController(String bus, int id) {
         super();
-        motor = new WPI_TalonFX(id);
+        motor = new WPI_TalonFX(id, bus);
         Chirp.talonMotorArrayList.add(this);
     }
 
@@ -43,7 +47,17 @@ public class TalonMotorController extends AbstractMotorController {
     @Override
     public AbstractMotorController setInverted(boolean invert) {
         motor.setInverted(invert);
+        if (!this.isFollower) {
+            for (AbstractMotorController followerMotor : motorFollowerList) {
+                followerMotor.setInverted(invert);
+            }
+        }
         return this;
+    }
+
+    @Override
+    public int getID() {
+        return motor.getDeviceID();
     }
 
     @Override
@@ -53,21 +67,29 @@ public class TalonMotorController extends AbstractMotorController {
 
     @Override
     public AbstractMotorController follow(AbstractMotorController leader, boolean invert) {
-        if (leader instanceof TalonMotorController)
-            motor.follow(((TalonMotorController) leader).motor);
-        else
+        if (leader instanceof TalonMotorController) {
+            //motor.follow(((TalonMotorController) leader).motor);
+            ((TalonMotorController) leader).motorFollowerList.add(this);
+            this.setSensorToRealDistanceFactor(leader.sensorToRealDistanceFactor);
+            this.isFollower = true;
+        } else
             throw new IllegalArgumentException("I cant follow that");
         setInverted(invert);
         return this;
     }
 
     @Override
-    public AbstractMotorController follow(AbstractMotorController leader) {
-        return follow(leader, false);
+    public void setRealFactorFromMotorRPS(double r2rf) {
+        sensorToRealDistanceFactor = r2rf * 10 / Robot.robotSettings.CTRE_SENSOR_UNITS_PER_ROTATION;
     }
 
     @Override
     public void resetEncoder() {
+        if (!this.isFollower) {
+            for (AbstractMotorController followerMotor : motorFollowerList) {
+                followerMotor.resetEncoder();
+            }
+        }
         if (motor.setSelectedSensorPosition(0) != ErrorCode.OK)
             if (!Robot.SECOND_TRY)
                 throw new IllegalStateException("Talon motor controller with ID " + motor.getDeviceID() + " could not be reset");
@@ -82,27 +104,63 @@ public class TalonMotorController extends AbstractMotorController {
                 throw new IllegalStateException("Talon motor controller with ID " + motor.getDeviceID() + " PIDF couldnt be set");
             else
                 failureFlag = true;
+
+        if (!this.isFollower) {
+            for (AbstractMotorController followerMotor : motorFollowerList) {
+                followerMotor.setPid(pid);
+            }
+        }
         return this;
     }
 
     @Override
     public void moveAtVelocity(double realAmount) {
-        if (isTemperatureAcceptable(motor.getDeviceID()))
+        if (isTemperatureAcceptable()) {
             motor.set(Velocity, realAmount / sensorToRealDistanceFactor);
-        else
+            if (!this.isFollower) {
+                for (AbstractMotorController followerMotor : motorFollowerList) {
+                    followerMotor.moveAtVelocity(realAmount);
+                }
+            }
+        } else
             motor.set(Velocity, 0);
         /// sensorToRealDistanceFactor);
         //System.out.println("I'm crying. RealAmount: " + realAmount + "\nSensortoDist: " + sensorToRealDistanceFactor + "\nSetting motors to " + realAmount / sensorToRealDistanceFactor);
     }
 
     @Override
+    public int getMaxRPM() {
+        return SupportedMotors.TALON_FX.MAX_SPEED_RPM;
+    }
+
+    @Override
     public void moveAtPosition(double pos) {
         motor.set(Position, pos);
+        if (!this.isFollower) {
+            for (AbstractMotorController followerMotor : motorFollowerList) {
+                followerMotor.moveAtPosition(pos);
+            }
+        }
+    }
+
+    @Override
+    public void moveAtVoltage(double voltin) {
+        motor.setVoltage(voltin);
+        if (!this.isFollower) {
+            for (AbstractMotorController followerMotor : motorFollowerList) {
+                followerMotor.moveAtVoltage(voltin);
+            }
+        }
     }
 
     @Override
     public AbstractMotorController setBrake(boolean brake) {
         motor.setNeutralMode(brake ? Brake : Coast);
+        if (!this.isFollower) {
+            for (AbstractMotorController followerMotor : motorFollowerList) {
+                followerMotor.setBrake(brake);
+            }
+        }
         return this;
     }
 
@@ -117,6 +175,11 @@ public class TalonMotorController extends AbstractMotorController {
     }
 
     @Override
+    public double getVoltage() {
+        return motor.getMotorOutputVoltage();
+    }
+
+    @Override
     public AbstractMotorController setCurrentLimit(int limit) {
         SupplyCurrentLimitConfiguration config = new SupplyCurrentLimitConfiguration();
         config.currentLimit = limit;
@@ -126,15 +189,33 @@ public class TalonMotorController extends AbstractMotorController {
                 throw new IllegalStateException("Talon motor controller with ID " + motor.getDeviceID() + " current limit could not be set");
             else
                 failureFlag = true;
+        if (!this.isFollower) {
+            for (AbstractMotorController followerMotor : motorFollowerList) {
+                followerMotor.setCurrentLimit(limit);
+            }
+        }
         return this;
     }
 
     @Override
     public void moveAtPercent(double percent) {
-        if (isTemperatureAcceptable(motor.getDeviceID()))
+        if (isTemperatureAcceptable()) {
             motor.set(PercentOutput, percent);
-        else
+        } else {
             motor.set(PercentOutput, 0);
+        }
+        if (!this.isFollower) {
+            for (AbstractMotorController followerMotor : motorFollowerList) {
+                followerMotor.moveAtPercent(percent);
+            }
+        }
+    }
+
+    @Override
+    public AbstractMotorController unfollow() {
+        motor.follow(motor);
+        motorFollowerList.remove(this);
+        return this;
     }
 
     @Override
@@ -144,6 +225,11 @@ public class TalonMotorController extends AbstractMotorController {
                 throw new IllegalStateException("Talon motor controller with ID " + motor.getDeviceID() + " could not set open ramp rate");
             else
                 failureFlag = true;
+        if (!this.isFollower) {
+            for (AbstractMotorController followerMotor : motorFollowerList) {
+                followerMotor.setOpenLoopRampRate(timeToMax);
+            }
+        }
         return this;
     }
 
@@ -153,12 +239,19 @@ public class TalonMotorController extends AbstractMotorController {
     }
 
     @Override
+    public boolean isFailed() {
+        Faults falts = new Faults();
+        motor.getFaults(falts);
+        return falts.hasAnyFault() || failureFlag;
+    }
+
+    @Override
     public String getSuggestedFix() {
         Faults foundFaults = new Faults();
         motor.getFaults(foundFaults);
         failureFlag = foundFaults.hasAnyFault();
-        if (foundFaults.UnderVoltage) ;
-            //report to PDP
+        if (foundFaults.UnderVoltage)
+            potentialFix = "More power";
         else if (foundFaults.RemoteLossOfSignal)
             potentialFix = "Ensure that motor %d is plugged into can AND power";
         else if (foundFaults.APIError)

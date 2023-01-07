@@ -1,27 +1,22 @@
 package frc.motors;
 
-import com.revrobotics.CANEncoder;
-import com.revrobotics.CANError;
-import com.revrobotics.CANPIDController;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel;
-import com.revrobotics.EncoderType;
 import frc.misc.PID;
 import frc.robot.Robot;
 
+import static com.revrobotics.CANSparkMax.ControlType.*;
 import static com.revrobotics.CANSparkMax.IdleMode.kBrake;
 import static com.revrobotics.CANSparkMax.IdleMode.kCoast;
 import static com.revrobotics.CANSparkMaxLowLevel.MotorType.kBrushless;
-import static com.revrobotics.ControlType.kPosition;
-import static com.revrobotics.ControlType.kVelocity;
 
 /**
  * This works to wrap Neo's and maybe some other motors
  */
 public class SparkMotorController extends AbstractMotorController {
     public final CANSparkMax motor;
-    private final CANPIDController myPid;
-    private final CANEncoder encoder;
+    private final SparkMaxPIDController myPid;
+    private final RelativeEncoder encoder;
 
     public SparkMotorController(int channelID) {
         this(channelID, kBrushless);
@@ -31,13 +26,13 @@ public class SparkMotorController extends AbstractMotorController {
         super();
         motor = new CANSparkMax(channelID, type);
         if (type == CANSparkMaxLowLevel.MotorType.kBrushed) {
-            encoder = motor.getEncoder(EncoderType.kQuadrature, 560);
+            encoder = motor.getEncoder(SparkMaxRelativeEncoder.Type.kQuadrature, 560);
         } else {
             encoder = motor.getEncoder();
         }
         myPid = motor.getPIDController();
         //I dont know if talons do this or if we ever dont do this so here it is
-        if (myPid.setOutputRange(-1, 1) != CANError.kOk)
+        if (myPid.setOutputRange(-1, 1) != REVLibError.kOk)
             if (!Robot.SECOND_TRY)
                 throw new IllegalStateException("Spark motor controller with ID " + motor.getDeviceId() + " could not set its output range");
             else
@@ -56,25 +51,8 @@ public class SparkMotorController extends AbstractMotorController {
     }
 
     @Override
-    public AbstractMotorController follow(AbstractMotorController leader) {
-        return follow(leader, false);
-    }
-
-    @Override
-    public AbstractMotorController follow(AbstractMotorController leader, boolean invert) {
-        if (!(leader instanceof SparkMotorController))
-            throw new IllegalArgumentException("I cant follow that!!");
-        if (motor.follow(((SparkMotorController) leader).motor, invert) != CANError.kOk)
-            if (!Robot.SECOND_TRY)
-                throw new IllegalStateException("Spark motor controller with ID " + motor.getDeviceId() + " could not follow the leader");
-            else
-                failureFlag = true;
-        return this;
-    }
-
-    @Override
     public void resetEncoder() {
-        if (encoder.setPosition(0) != CANError.kOk)
+        if (encoder.setPosition(0) != REVLibError.kOk)
             if (!Robot.SECOND_TRY)
                 throw new IllegalStateException("Spark motor controller with ID " + motor.getDeviceId() + " could not reset its encoder");
             else
@@ -83,7 +61,7 @@ public class SparkMotorController extends AbstractMotorController {
 
     @Override
     public AbstractMotorController setPid(PID pid) {
-        if (myPid.setP(pid.getP()) != CANError.kOk || myPid.setI(pid.getI()) != CANError.kOk || myPid.setD(pid.getD()) != CANError.kOk || myPid.setFF(pid.getF()) != CANError.kOk)
+        if (myPid.setP(pid.getP(), 0) != REVLibError.kOk || myPid.setI(pid.getI(), 0) != REVLibError.kOk || myPid.setD(pid.getD(), 0) != REVLibError.kOk || myPid.setFF(pid.getF(), 0) != REVLibError.kOk)
             if (!Robot.SECOND_TRY)
                 throw new IllegalStateException("Spark motor controller with ID " + motor.getDeviceId() + " F in PIDF couldnt be reset");
             else
@@ -92,13 +70,20 @@ public class SparkMotorController extends AbstractMotorController {
     }
 
     @Override
-    public void moveAtVelocity(double realDistance) {
-        myPid.setReference(realDistance / sensorToRealDistanceFactor, kVelocity);
+    public void moveAtVelocity(double velocityRPM) {
+        //System.out.println("VelocityRPM " + velocityRPM);
+        //System.out.println(this.sensorToRealDistanceFactor);
+        myPid.setReference(velocityRPM / this.sensorToRealDistanceFactor, kVelocity, 0);
     }
 
     @Override
     public void moveAtPosition(double pos) {
-        myPid.setReference(pos / sensorToRealDistanceFactor, kPosition);
+        myPid.setReference(pos * sensorToRealDistanceFactor, kPosition, 0);
+    }
+
+    @Override
+    public void moveAtVoltage(double voltin) {
+        motor.setVoltage(voltin);
     }
 
     @Override
@@ -109,19 +94,22 @@ public class SparkMotorController extends AbstractMotorController {
 
     @Override
     public double getRotations() {
-        //why 9? i dunno
-        return encoder.getPosition() * sensorToRealDistanceFactor;
-        //return encoder.getVelocity() * sensorToRevolutionFactor;
+        return encoder.getPosition();
     }
 
     @Override
     public double getSpeed() {
-        return encoder.getVelocity() * sensorToRealDistanceFactor;
+        return encoder.getVelocity();
+    }
+
+    @Override
+    public double getVoltage() {
+        return motor.getBusVoltage() * motor.getAppliedOutput();
     }
 
     @Override
     public AbstractMotorController setCurrentLimit(int limit) {
-        if (motor.setSmartCurrentLimit(limit) != CANError.kOk)
+        if (motor.setSmartCurrentLimit(limit) != REVLibError.kOk)
             if (!Robot.SECOND_TRY)
                 throw new IllegalStateException("Spark motor controller with ID " + motor.getDeviceId() + " could not set current limit");
             else
@@ -130,13 +118,8 @@ public class SparkMotorController extends AbstractMotorController {
     }
 
     @Override
-    public void moveAtPercent(double percent) {
-        motor.set(percent);
-    }
-
-    @Override
     public AbstractMotorController setOpenLoopRampRate(double timeToMax) {
-        if (motor.setOpenLoopRampRate(timeToMax) != CANError.kOk)
+        if (motor.setOpenLoopRampRate(timeToMax) != REVLibError.kOk)
             if (!Robot.SECOND_TRY)
                 throw new IllegalStateException("Spark motor controller with ID " + motor.getDeviceId() + " could not set open loop ramp");
             else
@@ -184,7 +167,62 @@ public class SparkMotorController extends AbstractMotorController {
     }
 
     @Override
+    public boolean isFailed() {
+        return motor.getFaults() != 0 || failureFlag;
+    }
+
+    @Override
+    public int getMaxRPM() {
+        return SupportedMotors.CAN_SPARK_MAX.MAX_SPEED_RPM;
+    }
+
+    @Override
+    public void moveAtPercent(double percent) {
+        motor.set(percent);
+    }
+
+    @Override
+    public AbstractMotorController unfollow() {
+        motor.follow(motor);
+        return this;
+    }
+
+    @Override
+    public AbstractMotorController follow(AbstractMotorController leader, boolean invert) {
+        if (!(leader instanceof SparkMotorController))
+            throw new IllegalArgumentException("I cant follow that!!");
+        if (motor.follow(((SparkMotorController) leader).motor, invert) != REVLibError.kOk)
+            if (!Robot.SECOND_TRY)
+                throw new IllegalStateException("Spark motor controller with ID " + motor.getDeviceId() + " could not follow the leader");
+            else
+                failureFlag = true;
+        return this;
+    }
+
+    @Override
+    public void setRealFactorFromMotorRPS(double r2rf) {
+        sensorToRealDistanceFactor = r2rf;
+    }
+
+    @Override
     public double getMotorTemperature() {
         return motor.getMotorTemperature();
+    }
+
+    @Override
+    public int getID() {
+        return motor.getDeviceId();
+    }
+
+    public void moveAtPositionSmart(double pos) {
+        myPid.setReference(pos / sensorToRealDistanceFactor, kSmartMotion, 0);
+    }
+
+    public void setAllowedClosedLoopError(double threshold) {
+        myPid.setSmartMotionAllowedClosedLoopError(threshold, 0);
+    }
+
+    public double getAbsoluteRotations() {
+        return encoder.getPosition();
     }
 }

@@ -22,6 +22,11 @@ public class VictorMotorController extends AbstractMotorController {
     }
 
     @Override
+    public void setRealFactorFromMotorRPS(double r2rf) {
+        sensorToRealDistanceFactor = r2rf * 10 / Robot.robotSettings.CTRE_SENSOR_UNITS_PER_ROTATION;
+    }
+
+    @Override
     public AbstractMotorController setInverted(boolean invert) {
         motor.setInverted(invert);
         return this;
@@ -33,18 +38,23 @@ public class VictorMotorController extends AbstractMotorController {
     }
 
     @Override
-    public AbstractMotorController follow(AbstractMotorController leader) {
-        if (leader instanceof VictorMotorController) {
-            motor.follow(((VictorMotorController) leader).motor);
-        } else
-            throw new IllegalArgumentException("I cant follow that!");
-        return this;
+    public int getID() {
+        return motor.getDeviceID();
     }
 
     @Override
     public AbstractMotorController follow(AbstractMotorController leader, boolean invert) {
-        follow(leader);
+        if (leader instanceof VictorMotorController) {
+            motor.follow(((VictorMotorController) leader).motor);
+        } else
+            throw new IllegalArgumentException("I cant follow that!");
         setInverted(invert);
+        return this;
+    }
+
+    @Override
+    public AbstractMotorController unfollow() {
+        motor.follow(motor);
         return this;
     }
 
@@ -69,7 +79,7 @@ public class VictorMotorController extends AbstractMotorController {
 
     @Override
     public void moveAtVelocity(double realVelocity) {
-        if (isTemperatureAcceptable(motor.getDeviceID()))
+        if (isTemperatureAcceptable())
             motor.set(Velocity, realVelocity / sensorToRealDistanceFactor);
         else
             motor.set(Velocity, 0);
@@ -78,6 +88,17 @@ public class VictorMotorController extends AbstractMotorController {
     @Override
     public void moveAtPosition(double pos) {
         motor.set(Position, pos / sensorToRealDistanceFactor);
+    }
+
+    @Override
+    public double getVoltage() {
+        return motor.getMotorOutputVoltage();
+    }
+
+    @Override
+    public void moveAtVoltage(double voltin) {
+        //motor.set(VictorSPXControlMode.PercentOutput, voltin);
+        throw new IllegalStateException("I can't do this loser");
     }
 
     @Override
@@ -103,8 +124,13 @@ public class VictorMotorController extends AbstractMotorController {
     }
 
     @Override
+    public int getMaxRPM() {
+        return SupportedMotors.VICTOR.MAX_SPEED_RPM;
+    }
+
+    @Override
     public void moveAtPercent(double percent) {
-        if (isTemperatureAcceptable(motor.getDeviceID()))
+        if (isTemperatureAcceptable())
             motor.set(PercentOutput, percent);
         else
             motor.set(PercentOutput, 0);
@@ -126,12 +152,19 @@ public class VictorMotorController extends AbstractMotorController {
     }
 
     @Override
+    public boolean isFailed() {
+        Faults falts = new Faults();
+        motor.getFaults(falts);
+        return falts.hasAnyFault() || failureFlag;
+    }
+
+    @Override
     public String getSuggestedFix() {
         Faults foundFaults = new Faults();
         motor.getFaults(foundFaults);
         failureFlag = foundFaults.hasAnyFault();
         if (foundFaults.UnderVoltage) ;
-            //report to PDP
+            //report to PowerDistribution
         else if (foundFaults.RemoteLossOfSignal)
             potentialFix = "Ensure that motor %d is plugged into can AND power";
         else if (foundFaults.APIError)

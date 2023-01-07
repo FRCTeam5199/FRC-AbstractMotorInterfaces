@@ -23,6 +23,17 @@ public abstract class AbstractFollowerMotorController {
      */
     public abstract void invert(boolean invert);
 
+    public int getBundleID() {
+        return motors[0].getID();
+    }
+
+    public AbstractMotorController getMotor(int id) {
+        if (id > 0 && motors.length-1 < id) {
+            return motors[id];
+        }
+        return null;
+    }
+
     /**
      * Makes each motor follow the passed motor The passed motor type must match the follower types
      *
@@ -63,7 +74,7 @@ public abstract class AbstractFollowerMotorController {
 
     public boolean failureFlag() {
         for (AbstractMotorController motor : motors)
-            if (motor.failureFlag)
+            if (motor.isFailed())
                 return true;
         return false;
     }
