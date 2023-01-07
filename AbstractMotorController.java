@@ -5,12 +5,9 @@ import frc.misc.UserInterface;
 import frc.motors.followers.AbstractFollowerMotorController;
 import frc.motors.followers.SparkFollowerMotorsController;
 import frc.motors.followers.TalonFollowerMotorController;
-import frc.robot.Main;
 import frc.robot.Robot;
 
 import java.util.ArrayList;
-
-import static frc.robot.Robot.robotSettings;
 
 /**
  * This is the base class for any motor. It is not an interface because it has to have a {@link
@@ -145,8 +142,9 @@ public abstract class AbstractMotorController {
      * revolutions per second, and then apply the supplied conversion
      *
      * @param r2rf Conversion from motor RPS to real RPM, ft/s, etc
+     * @param t2tf
      */
-    public abstract void setRealFactorFromMotorRPS(double r2rf);
+    public abstract void setRealFactorFromMotorRPM(double r2rf, double t2tf);
 
     /**
      * In order to prevent out of control PID loops from emerging, especially coming out of a disable in test mde, we
@@ -203,11 +201,16 @@ public abstract class AbstractMotorController {
      * see docs for {@link #sensorToRealDistanceFactor} for full explanation
      *
      * @param s2rf Conversion from encoder units to RPM including the gearing
+     *
+     * @see #setRealFactorFromMotorRPM(double, double)
+     * @deprecated
      */
+    @Deprecated
     public void setSensorToRealDistanceFactor(double s2rf) {
         sensorToRealDistanceFactor = s2rf;
     }
 
+    @Deprecated
     public void setSensorToRealTimeFactor(double s2rf) {
         sensorToRealTimeFactor = s2rf;
     }
@@ -257,7 +260,7 @@ public abstract class AbstractMotorController {
      */
     public enum SupportedMotors {
         //Spark = Neo 550, Talon = Falcon 500, Victor = 775pros, Servo = whatever servo you put in. I didn't have a better place for this so it's here
-        CAN_SPARK_MAX(11710), TALON_FX(6380), VICTOR(18730), SERVO, CANIVORE_TALON_FX, CANIVORE_VICTOR;
+        CAN_SPARK_MAX(11710), TALON_FX(6380), VICTOR(18730), SERVO;
 
         /**
          * Read the name!
@@ -272,14 +275,12 @@ public abstract class AbstractMotorController {
             MAX_SPEED_RPM = 0;
         }
 
-        public AbstractFollowerMotorController createFollowerMotorsOfType(int... followerIDs) {
+        public AbstractFollowerMotorController createFollowerMotorsOfType(String canbus, int... followerIDs) {
             switch (this) {
                 case CAN_SPARK_MAX:
                     return new SparkFollowerMotorsController(followerIDs);
                 case TALON_FX:
-                    return new TalonFollowerMotorController("rio", followerIDs);
-                case CANIVORE_TALON_FX:
-                    return new TalonFollowerMotorController("CANivore 1", followerIDs);
+                    return new TalonFollowerMotorController(canbus, followerIDs);
                 case VICTOR:
                 case SERVO:
                 default:
@@ -287,20 +288,26 @@ public abstract class AbstractMotorController {
             }
         }
 
-        public AbstractMotorController createMotorOfType(int ID) {
+        public AbstractFollowerMotorController createFollowerMotorsOfType(int... followerIDs) {
+            return this.createFollowerMotorsOfType("rio", followerIDs);
+        }
+
+        public AbstractMotorController createMotorOfType(String canbus, int ID) {
             switch (this) {
                 case CAN_SPARK_MAX:
                     return new SparkMotorController(ID);
                 case TALON_FX:
-                    return new TalonMotorController("rio", ID);
+                    return new TalonMotorController(ID, canbus);
                 case VICTOR:
                     return new VictorMotorController(ID);
-                case CANIVORE_TALON_FX:
-                    return new TalonMotorController("CANivore 1", ID);
                 case SERVO:
                 default:
                     throw new IllegalArgumentException("I cannot make a motor of type " + name());
             }
+        }
+
+        public AbstractMotorController createMotorOfType(int ID) {
+            return this.createMotorOfType("rio", ID);
         }
     }
 }

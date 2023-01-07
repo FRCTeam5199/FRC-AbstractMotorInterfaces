@@ -10,7 +10,7 @@ public class TalonFollowerMotorController extends AbstractFollowerMotorControlle
     public TalonFollowerMotorController(String bus, int... ids) {
         motors = new TalonMotorController[ids.length];
         for (int i = 0; i < ids.length; i++)
-            motors[i] = new TalonMotorController(bus, ids[i]);
+            motors[i] = new TalonMotorController(ids[i], bus);
     }
 
     @Override

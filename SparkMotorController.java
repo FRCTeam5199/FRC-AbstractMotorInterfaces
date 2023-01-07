@@ -4,7 +4,8 @@ import com.revrobotics.*;
 import frc.misc.PID;
 import frc.robot.Robot;
 
-import static com.revrobotics.CANSparkMax.ControlType.*;
+import static com.revrobotics.CANSparkMax.ControlType.kPosition;
+import static com.revrobotics.CANSparkMax.ControlType.kVelocity;
 import static com.revrobotics.CANSparkMax.IdleMode.kBrake;
 import static com.revrobotics.CANSparkMax.IdleMode.kCoast;
 import static com.revrobotics.CANSparkMaxLowLevel.MotorType.kBrushless;
@@ -36,6 +37,9 @@ public class SparkMotorController extends AbstractMotorController {
                 throw new IllegalStateException("Spark motor controller with ID " + motor.getDeviceId() + " could not set its output range");
             else
                 failureFlag = true;
+
+        sensorToRealDistanceFactor = 1D;
+        sensorToRealTimeFactor = 1D;
     }
 
     @Override
@@ -195,13 +199,16 @@ public class SparkMotorController extends AbstractMotorController {
                 throw new IllegalStateException("Spark motor controller with ID " + motor.getDeviceId() + " could not follow the leader");
             else
                 failureFlag = true;
+
+        this.sensorToRealTimeFactor = leader.sensorToRealTimeFactor;
+        this.sensorToRealDistanceFactor = leader.sensorToRealDistanceFactor;
         return this;
     }
 
     @Override
-    public void setRealFactorFromMotorRPS(double r2rf) {
+    public void setRealFactorFromMotorRPM(double r2rf, double t2tf) {
         sensorToRealDistanceFactor = r2rf;
-        sensorToRealTimeFactor = 60D;
+        sensorToRealTimeFactor = t2tf;
     }
 
     @Override
@@ -212,10 +219,6 @@ public class SparkMotorController extends AbstractMotorController {
     @Override
     public int getID() {
         return motor.getDeviceId();
-    }
-
-    public void moveAtPositionSmart(double pos) {
-        myPid.setReference(pos / sensorToRealDistanceFactor, kSmartMotion, 0);
     }
 
     public void setAllowedClosedLoopError(double threshold) {

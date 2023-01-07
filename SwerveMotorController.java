@@ -23,29 +23,11 @@ public class SwerveMotorController {
      */
     public SwerveMotorController(int driverID, @Nullable AbstractMotorController.SupportedMotors driverMotorType, int steeringID, @Nullable AbstractMotorController.SupportedMotors steeringMotorType) {
         if (driverMotorType != null) {
-            switch (driverMotorType) {
-                case VICTOR:
-                    driver = new VictorMotorController(driverID);
-                    break;
-                case TALON_FX:
-                    driver = new TalonMotorController(robotSettings.DRIVE_MOTOR_CANBUS, driverID);
-                    break;
-                case CAN_SPARK_MAX:
-                    driver = new SparkMotorController(driverID);
-            }
+            driver = driverMotorType.createMotorOfType(robotSettings.DRIVE_MOTOR_CANBUS, driverID);
             driver.setCurrentLimit(30);
         }
         if (steeringMotorType != null) {
-            switch (steeringMotorType) {
-                case VICTOR:
-                    steering = new VictorMotorController(steeringID);
-                    break;
-                case TALON_FX:
-                    steering = new TalonMotorController(robotSettings.DRIVE_MOTOR_CANBUS, steeringID);
-                    break;
-                case CAN_SPARK_MAX:
-                    steering = new SparkMotorController(steeringID);
-            }
+            steering = steeringMotorType.createMotorOfType(robotSettings.DRIVE_MOTOR_CANBUS, steeringID);
             steering.setCurrentLimit(30);
         }
     }

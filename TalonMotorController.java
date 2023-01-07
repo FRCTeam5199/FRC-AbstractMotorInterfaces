@@ -23,10 +23,13 @@ public class TalonMotorController extends AbstractMotorController {
     private final WPI_TalonFX motor;
     public boolean isFollower = false;
 
-    public TalonMotorController(String bus, int id) {
+    public TalonMotorController(int id, String bus) {
         super();
         motor = new WPI_TalonFX(id, bus);
         Chirp.talonMotorArrayList.add(this);
+
+        sensorToRealDistanceFactor = 1D / Robot.robotSettings.CTRE_SENSOR_UNITS_PER_ROTATION;
+        sensorToRealTimeFactor = 60D * 10D / 1D;
     }
 
     /**
@@ -70,7 +73,8 @@ public class TalonMotorController extends AbstractMotorController {
         if (leader instanceof TalonMotorController) {
             //motor.follow(((TalonMotorController) leader).motor);
             ((TalonMotorController) leader).motorFollowerList.add(this);
-            this.setSensorToRealDistanceFactor(leader.sensorToRealDistanceFactor);
+            this.sensorToRealTimeFactor = leader.sensorToRealTimeFactor;
+            this.sensorToRealDistanceFactor = leader.sensorToRealDistanceFactor;
             this.isFollower = true;
         } else
             throw new IllegalArgumentException("I cant follow that");
@@ -79,9 +83,9 @@ public class TalonMotorController extends AbstractMotorController {
     }
 
     @Override
-    public void setRealFactorFromMotorRPS(double r2rf) {
+    public void setRealFactorFromMotorRPM(double r2rf, double t2tf) {
         sensorToRealDistanceFactor = r2rf / Robot.robotSettings.CTRE_SENSOR_UNITS_PER_ROTATION;
-        sensorToRealTimeFactor = 10D / 1D;
+        sensorToRealTimeFactor = t2tf * 60D * 10D / 1D;
     }
 
     @Override
@@ -125,8 +129,6 @@ public class TalonMotorController extends AbstractMotorController {
             }
         } else
             motor.set(Velocity, 0);
-        /// sensorToRealDistanceFactor);
-        //System.out.println("I'm crying. RealAmount: " + realAmount + "\nSensortoDist: " + sensorToRealDistanceFactor + "\nSetting motors to " + realAmount / sensorToRealDistanceFactor);
     }
 
     @Override
