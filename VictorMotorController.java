@@ -23,7 +23,8 @@ public class VictorMotorController extends AbstractMotorController {
 
     @Override
     public void setRealFactorFromMotorRPS(double r2rf) {
-        sensorToRealDistanceFactor = r2rf * 10 / Robot.robotSettings.CTRE_SENSOR_UNITS_PER_ROTATION;
+        sensorToRealDistanceFactor = r2rf / Robot.robotSettings.CTRE_SENSOR_UNITS_PER_ROTATION;
+        sensorToRealTimeFactor = 10D / 1D;
     }
 
     @Override
@@ -80,7 +81,7 @@ public class VictorMotorController extends AbstractMotorController {
     @Override
     public void moveAtVelocity(double realVelocity) {
         if (isTemperatureAcceptable())
-            motor.set(Velocity, realVelocity / sensorToRealDistanceFactor);
+            motor.set(Velocity, realVelocity / sensorToRealDistanceFactor / sensorToRealTimeFactor);
         else
             motor.set(Velocity, 0);
     }
@@ -114,7 +115,7 @@ public class VictorMotorController extends AbstractMotorController {
 
     @Override
     public double getSpeed() {
-        return motor.getSelectedSensorVelocity() * sensorToRealDistanceFactor;
+        return motor.getSelectedSensorVelocity() * sensorToRealDistanceFactor * sensorToRealTimeFactor;
     }
 
     //TODO make this work lol

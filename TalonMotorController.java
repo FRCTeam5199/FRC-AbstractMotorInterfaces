@@ -80,7 +80,8 @@ public class TalonMotorController extends AbstractMotorController {
 
     @Override
     public void setRealFactorFromMotorRPS(double r2rf) {
-        sensorToRealDistanceFactor = r2rf * 10 / Robot.robotSettings.CTRE_SENSOR_UNITS_PER_ROTATION;
+        sensorToRealDistanceFactor = r2rf / Robot.robotSettings.CTRE_SENSOR_UNITS_PER_ROTATION;
+        sensorToRealTimeFactor = 10D / 1D;
     }
 
     @Override
@@ -116,7 +117,7 @@ public class TalonMotorController extends AbstractMotorController {
     @Override
     public void moveAtVelocity(double realAmount) {
         if (isTemperatureAcceptable()) {
-            motor.set(Velocity, realAmount / sensorToRealDistanceFactor);
+            motor.set(Velocity, realAmount / sensorToRealDistanceFactor / sensorToRealTimeFactor);
             if (!this.isFollower) {
                 for (AbstractMotorController followerMotor : motorFollowerList) {
                     followerMotor.moveAtVelocity(realAmount);
@@ -135,7 +136,7 @@ public class TalonMotorController extends AbstractMotorController {
 
     @Override
     public void moveAtPosition(double pos) {
-        motor.set(Position, pos);
+        motor.set(Position, pos / sensorToRealDistanceFactor);
         if (!this.isFollower) {
             for (AbstractMotorController followerMotor : motorFollowerList) {
                 followerMotor.moveAtPosition(pos);
@@ -171,7 +172,7 @@ public class TalonMotorController extends AbstractMotorController {
 
     @Override
     public double getSpeed() {
-        return motor.getSelectedSensorVelocity() * sensorToRealDistanceFactor;
+        return motor.getSelectedSensorVelocity() * sensorToRealDistanceFactor * sensorToRealTimeFactor;
     }
 
     @Override

@@ -1,13 +1,10 @@
 package frc.motors;
 
 import com.revrobotics.*;
-
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMaxLowLevel;
 import frc.misc.PID;
 import frc.robot.Robot;
 
-import static com.revrobotics.ControlType.*;
+import static com.revrobotics.CANSparkMax.ControlType.*;
 import static com.revrobotics.CANSparkMax.IdleMode.kBrake;
 import static com.revrobotics.CANSparkMax.IdleMode.kCoast;
 import static com.revrobotics.CANSparkMaxLowLevel.MotorType.kBrushless;
@@ -75,7 +72,7 @@ public class SparkMotorController extends AbstractMotorController {
     public void moveAtVelocity(double velocityRPM) {
         //System.out.println("VelocityRPM " + velocityRPM);
         //System.out.println(this.sensorToRealDistanceFactor);
-        myPid.setReference(velocityRPM / this.sensorToRealDistanceFactor, kVelocity, 0);
+        myPid.setReference(velocityRPM / sensorToRealDistanceFactor / sensorToRealTimeFactor, kVelocity, 0);
     }
 
     @Override
@@ -96,12 +93,12 @@ public class SparkMotorController extends AbstractMotorController {
 
     @Override
     public double getRotations() {
-        return encoder.getPosition();
+        return encoder.getPosition() * sensorToRealDistanceFactor;
     }
 
     @Override
     public double getSpeed() {
-        return encoder.getVelocity();
+        return encoder.getVelocity() * sensorToRealTimeFactor * sensorToRealDistanceFactor;
     }
 
     @Override
@@ -204,6 +201,7 @@ public class SparkMotorController extends AbstractMotorController {
     @Override
     public void setRealFactorFromMotorRPS(double r2rf) {
         sensorToRealDistanceFactor = r2rf;
+        sensorToRealTimeFactor = 60D;
     }
 
     @Override

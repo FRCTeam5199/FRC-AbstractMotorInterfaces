@@ -33,6 +33,7 @@ public abstract class AbstractMotorController {
      * it is giving you hell and you dont want to actually fix the issue, just change to double (value, not object)
      */
     public Double sensorToRealDistanceFactor;
+    public Double sensorToRealTimeFactor;
     protected boolean failureFlag = false;
     protected String potentialFix;
     protected boolean isOverheated;
@@ -205,6 +206,10 @@ public abstract class AbstractMotorController {
      */
     public void setSensorToRealDistanceFactor(double s2rf) {
         sensorToRealDistanceFactor = s2rf;
+    }
+
+    public void setSensorToRealTimeFactor(double s2rf) {
+        sensorToRealTimeFactor = s2rf;
     }
 
     /**
