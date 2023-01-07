@@ -1,6 +1,5 @@
 package frc.motors;
 
-import frc.gpws.Alarms;
 import frc.misc.PID;
 import frc.misc.UserInterface;
 import frc.motors.followers.AbstractFollowerMotorController;
@@ -219,14 +218,10 @@ public abstract class AbstractMotorController {
             if (getMotorTemperature() >= Robot.robotSettings.OVERHEAT_THRESHOLD) {
                 if (!isOverheated) {
                     UserInterface.smartDashboardPutBoolean("OVERHEAT " + getID(), false);
-                    if (robotSettings.ENABLE_MEMES)
-                        Main.pipeline.sendAlarm(Alarms.Overheat, true);
                     isOverheated = true;
                 }
             } //wait 5 degrees to unoverheat
             else if (isOverheated && getMotorTemperature() < Robot.robotSettings.OVERHEAT_THRESHOLD - 5) {
-                if (robotSettings.ENABLE_MEMES)
-                    Main.pipeline.sendAlarm(Alarms.Overheat, false);
                 isOverheated = false;
                 UserInterface.smartDashboardPutBoolean("OVERHEAT " + getID(), true);
             }

@@ -1,11 +1,13 @@
 package frc.motors;
 
+import com.revrobotics.*;
+
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel;
 import frc.misc.PID;
 import frc.robot.Robot;
 
-import static com.revrobotics.CANSparkMax.ControlType.*;
+import static com.revrobotics.ControlType.*;
 import static com.revrobotics.CANSparkMax.IdleMode.kBrake;
 import static com.revrobotics.CANSparkMax.IdleMode.kCoast;
 import static com.revrobotics.CANSparkMaxLowLevel.MotorType.kBrushless;
