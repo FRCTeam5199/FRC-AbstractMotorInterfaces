@@ -137,6 +137,11 @@ public abstract class AbstractMotorController {
 
     public abstract int getMaxRPM();
 
+
+    public void setOutPutRange() {
+
+    }
+
     /**
      * Different from {@link #setSensorToRealDistanceFactor(double)} because this will first convert sensor units to
      * revolutions per second, and then apply the supplied conversion
@@ -252,6 +257,8 @@ public abstract class AbstractMotorController {
      * @return the device id this object controls
      */
     public abstract int getID();
+
+    public abstract void setOutPutRange(double min, double max);
 
 
     /**

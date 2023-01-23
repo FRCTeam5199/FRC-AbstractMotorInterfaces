@@ -47,6 +47,11 @@ public class VictorMotorController extends AbstractMotorController {
     }
 
     @Override
+    public void setOutPutRange(double min, double max) {
+
+    }
+
+    @Override
     public AbstractMotorController follow(AbstractMotorController leader, boolean invert) {
         if (leader instanceof VictorMotorController) {
             motor.follow(((VictorMotorController) leader).motor);

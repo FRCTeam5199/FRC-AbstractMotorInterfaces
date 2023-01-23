@@ -52,7 +52,6 @@ public class SparkMotorController extends AbstractMotorController {
     public String getName() {
         return "Spark: " + motor.getDeviceId();
     }
-
     @Override
     public void resetEncoder() {
         if (encoder.setPosition(0) != REVLibError.kOk)
@@ -219,6 +218,11 @@ public class SparkMotorController extends AbstractMotorController {
     @Override
     public int getID() {
         return motor.getDeviceId();
+    }
+
+    @Override
+    public void setOutPutRange(double min, double max){
+        myPid.setOutputRange(min,max);
     }
 
     public void setAllowedClosedLoopError(double threshold) {

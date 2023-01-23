@@ -64,6 +64,11 @@ public class TalonMotorController extends AbstractMotorController {
     }
 
     @Override
+    public void setOutPutRange(double min, double max) {
+
+    }
+
+    @Override
     public String getName() {
         return "Talon: " + motor.getDeviceID();
     }
