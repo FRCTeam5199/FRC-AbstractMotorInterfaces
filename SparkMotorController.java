@@ -120,6 +120,16 @@ public class SparkMotorController extends AbstractMotorController {
     }
 
     @Override
+    public AbstractMotorController setCurrentLimit(int stallLimit, int freeLimit) {
+        if (motor.setSmartCurrentLimit(stallLimit, freeLimit) != REVLibError.kOk)
+            if (!Robot.SECOND_TRY)
+                throw new IllegalStateException("Spark motor controller with ID " + motor.getDeviceId() + " could not set current limit");
+            else
+                failureFlag = true;
+        return this;
+    }
+
+    @Override
     public AbstractMotorController setOpenLoopRampRate(double timeToMax) {
         if (motor.setOpenLoopRampRate(timeToMax) != REVLibError.kOk)
             if (!Robot.SECOND_TRY)

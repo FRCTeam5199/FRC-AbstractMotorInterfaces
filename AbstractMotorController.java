@@ -111,6 +111,8 @@ public abstract class AbstractMotorController {
      */
     public abstract AbstractMotorController setCurrentLimit(int limit);
 
+    public abstract AbstractMotorController setCurrentLimit(int stallLimit, int freeLimit);
+
     /**
      * Sets the ramp rate for open loop control modes. This is the maximum rate at which the motor controller's output
      * is allowed to change in said mode.

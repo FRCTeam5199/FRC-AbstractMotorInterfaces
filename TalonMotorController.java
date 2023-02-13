@@ -206,6 +206,12 @@ public class TalonMotorController extends AbstractMotorController {
     }
 
     @Override
+    public AbstractMotorController setCurrentLimit(int stallLimit, int freeLimit) {
+        this.setCurrentLimit(stallLimit, 0);
+        return this;
+    }
+
+    @Override
     public void moveAtPercent(double percent) {
         if (isTemperatureAcceptable()) {
             motor.set(PercentOutput, percent);

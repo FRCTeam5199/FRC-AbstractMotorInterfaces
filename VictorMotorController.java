@@ -136,6 +136,11 @@ public class VictorMotorController extends AbstractMotorController {
     }
 
     @Override
+    public AbstractMotorController setCurrentLimit(int stallLimit, int freeLimit) {
+        return null;
+    }
+
+    @Override
     public int getMaxRPM() {
         return SupportedMotors.VICTOR.MAX_SPEED_RPM;
     }
