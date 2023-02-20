@@ -108,6 +108,11 @@ public class VictorMotorController extends AbstractMotorController {
     }
 
     @Override
+    public double getCurrent() {
+        return -1;
+    }
+
+    @Override
     public void moveAtVoltage(double voltin) {
         //motor.set(VictorSPXControlMode.PercentOutput, voltin);
         throw new IllegalStateException("I can't do this loser");

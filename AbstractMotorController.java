@@ -103,6 +103,8 @@ public abstract class AbstractMotorController {
 
     public abstract double getVoltage();
 
+    public abstract double getCurrent();
+
     /**
      * Sets the maximum allowable current that will flow through this motor
      *

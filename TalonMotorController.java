@@ -188,6 +188,11 @@ public class TalonMotorController extends AbstractMotorController {
     }
 
     @Override
+    public double getCurrent() {
+        return motor.getSupplyCurrent();
+    }
+
+    @Override
     public AbstractMotorController setCurrentLimit(int limit) {
         SupplyCurrentLimitConfiguration config = new SupplyCurrentLimitConfiguration();
         config.currentLimit = limit;

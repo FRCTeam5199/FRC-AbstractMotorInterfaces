@@ -110,6 +110,11 @@ public class SparkMotorController extends AbstractMotorController {
     }
 
     @Override
+    public double getCurrent() {
+        return motor.getOutputCurrent();
+    }
+
+    @Override
     public AbstractMotorController setCurrentLimit(int limit) {
         if (motor.setSmartCurrentLimit(limit) != REVLibError.kOk)
             if (!Robot.SECOND_TRY)
