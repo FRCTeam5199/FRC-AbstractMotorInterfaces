@@ -1,50 +1,37 @@
-package frc.motors;
+package frc.robot.abstractmotorinterfaces;
 
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.motorcontrol.Faults;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.music.Orchestra;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.hardware.TalonFX;
 import frc.misc.Chirp;
 import frc.misc.PID;
 import frc.robot.Robot;
 
 import java.util.ArrayList;
 
-import static com.ctre.phoenix.motorcontrol.ControlMode.*;
-import static com.ctre.phoenix.motorcontrol.NeutralMode.Brake;
-import static com.ctre.phoenix.motorcontrol.NeutralMode.Coast;
 
 /**
  * This is the wrapper for falcon 500's and maybe some other stuff
  */
 public class TalonMotorController extends AbstractMotorController {
     public final ArrayList<AbstractMotorController> motorFollowerList = new ArrayList<>();
-    private final WPI_TalonFX motor;
+    private final TalonFX motor;
+    private final TalonFXConfiguration config;
     public boolean isFollower = false;
 
     public TalonMotorController(int id, String bus) {
         super();
-        motor = new WPI_TalonFX(id, bus);
-        Chirp.talonMotorArrayList.add(this);
+        motor = new TalonFX(id, bus);
+        config = new TalonFXConfiguration();
+
+        motor.getConfigurator().apply(config);
 
         sensorToRealDistanceFactor = 1D / Robot.robotSettings.CTRE_SENSOR_UNITS_PER_ROTATION;
         sensorToRealTimeFactor = 60D * 10D / 1D;
-    }
-
-    /**
-     * The talons are the motors that make music and this is the method to register tham as musick makers. The orchestra
-     * is wrapped inside {@link Chirp} using the {@link Chirp#talonMotorArrayList meta talon registry}
-     *
-     * @param orchestra the {@link Orchestra} object this motor should join
-     * @see Chirp
-     */
-    public void addToOrchestra(Orchestra orchestra) {
-        if (orchestra.addInstrument(motor) != ErrorCode.OK)
-            if (!Robot.SECOND_TRY)
-                throw new IllegalStateException("Talon " + motor.getDeviceID() + " could not join the orchestra");
-            else
-                failureFlag = true;
     }
 
     @Override
